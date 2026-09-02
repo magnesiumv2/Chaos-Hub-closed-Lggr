@@ -1076,3 +1076,14 @@ Troll:AddButton({
             end
             if methodKill == "Couch" then
                 KillPlayerCouch()
+
+Troll:AddButton({
+        Name = "Puxar Player",
+        Callback = function()
+            if not selectedPlayerName or not Players:FindFirstChild(selectedPlayerName) then
+                print("Erro: Player não selecionado ou não existe")
+                return
+            end
+            if methodKill == "Couch" then
+                BringPlayerLLL
+                BringWithCouch()
