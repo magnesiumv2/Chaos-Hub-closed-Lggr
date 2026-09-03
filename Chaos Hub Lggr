@@ -1167,7 +1167,6 @@ Troll:AddButton({
         local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
         local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
         local Vehicles = game.Workspace:FindFirstChild("Vehicles")
-        local RunService = game:GetService("RunService")
 
         if not Humanoid or not RootPart then
             warn("Humanoid ou RootPart inválido")
@@ -1176,15 +1175,14 @@ Troll:AddButton({
 
         local function spawnBoat()
             RootPart.CFrame = CFrame.new(1754, -2, 58)
-            task.wait(0.2) -- Reduzido para maior rapidez
-            local re = game:GetService("ReplicatedStorage").RE:FindFirstChild("1Ca1r")
-            if re then re:FireServer("PickingBoat", "MilitaryBoatFree") end
-            task.wait(0.4) -- Reduzido o tempo de espera do spawn
+            task.wait(0.5)
+            game:GetService("ReplicatedStorage").RE:FindFirstChild("1Ca1r"):FireServer("PickingBoat", "MilitaryBoatFree")
+            task.wait(1)
             return Vehicles:FindFirstChild(Player.Name.."Car")
         end
 
         local PCar = Vehicles:FindFirstChild(Player.Name.."Car") or spawnBoat()
-        if not PCar or not PCar.PrimaryPart then
+        if not PCar then
             warn("Falha ao spawnar o barco")
             return
         end
@@ -1195,15 +1193,12 @@ Troll:AddButton({
             return
         end
 
-        -- Teleporte instantâneo para o assento
-        local timeout = 0
         repeat 
-            RunService.Heartbeat:Wait()
+            task.wait(0.1)
             RootPart.CFrame = Seat.CFrame * CFrame.new(0, 1, 0)
-            timeout = timeout + 1
-        until Humanoid.SeatPart == Seat or timeout > 50
+        until Humanoid.SeatPart == Seat
 
-        print("Barco pronto!")
+        print("Barco spawnado!")
 
         local TargetPlayer = game.Players:FindFirstChild(selectedPlayerName)
         if not TargetPlayer or not TargetPlayer.Character then
@@ -1220,54 +1215,48 @@ Troll:AddButton({
             return
         end
 
-        -- Configuração de Spin ultra agressiva
-        local Spin = PCar.PrimaryPart:FindFirstChild("Spinning") or Instance.new("BodyAngularVelocity")
+        local Spin = Instance.new("BodyAngularVelocity")
         Spin.Name = "Spinning"
         Spin.Parent = PCar.PrimaryPart
-        Spin.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-        Spin.AngularVelocity = Vector3.new(0, 9999, 0) -- Velocidade de rotação máxima multiplicada
+        Spin.MaxTorque = Vector3.new(0, math.huge, 0)
+        Spin.AngularVelocity = Vector3.new(0, 369, 0) 
 
-        print("Fling ultra agressivo ativo!")
+        print("Fling ativo!")
 
-        -- Tabela com offsets rápidos para colisão caótica
-        local offsets = {
-            Vector3.new(0, 0.5, 0),
-            Vector3.new(2, -1, 2),
-            Vector3.new(-2, 1, -2),
-            Vector3.new(0, -2, 0),
-            Vector3.new(1.5, 0, -1.5)
-        }
-        local offsetIndex = 1
+        local function moveCar(TargetRP, offset)
+            if PCar and PCar.PrimaryPart then
+                PCar:SetPrimaryPartCFrame(CFrame.new(TargetRP.Position + offset))
+            end
+        end
 
-        -- Loop de colisão na velocidade máxima do motor gráfico (Heartbeat)
-        local flingConnection
-        flingConnection = RunService.Heartbeat:Connect(function()
-            if not PCar or not PCar.Parent or not PCar.PrimaryPart or not TargetRP or not TargetRP.Parent then
-                if Spin and Spin.Parent then Spin:Destroy() end
-                print("Fling desativado")
-                flingConnection:Disconnect()
-                return
+        task.spawn(function()
+            while PCar and PCar.Parent and TargetRP and TargetRP.Parent do
+                task.wait(0.01) 
+                
+                moveCar(TargetRP, Vector3.new(0, 1, 0))  
+                moveCar(TargetRP, Vector3.new(0, -2.25, 5))  
+                moveCar(TargetRP, Vector3.new(0, 2.25, 0.25))  
+                moveCar(TargetRP, Vector3.new(-2.25, -1.5, 2.25))  
+                moveCar(TargetRP, Vector3.new(0, 1.5, 0))  
+                moveCar(TargetRP, Vector3.new(0, -1.5, 0))  
+
+                if PCar and PCar.PrimaryPart then
+                    local Rotation = CFrame.Angles(
+                        math.rad(math.random(-369, 369)),  
+                        math.rad(math.random(-369, 369)), 
+                        math.rad(math.random(-369, 369))
+                    )
+                    PCar:SetPrimaryPartCFrame(CFrame.new(TargetRP.Position + Vector3.new(0, 1.5, 0)) * Rotation)
+                end
             end
 
-            -- AJUSTE DE PREDIÇÃO DE VELOCIDADE: Preve o movimento do alvo com base na velocidade atual dele
-            local targetVelocity = TargetRP.AssemblyLinearVelocity
-            local predictionFactor = 0.12 -- Ajuste (quanto maior, mais ele "chuta" onde o alvo vai estar)
-            local predictedPosition = TargetRP.Position + (targetVelocity * predictionFactor)
-
-            -- Alterna os offsets rapidamente a cada frame para bugar a física do alvo
-            offsetIndex = (offsetIndex % #offsets) + 1
-            local currentOffset = offsets[offsetIndex]
-
-            -- Rotação caótica aleatória em 3 eixos (Glitches de física mais fortes)
-            local randomRotation = CFrame.Angles(
-                math.rad(math.random(-180, 180)),  
-                math.rad(math.random(-180, 180)), 
-                math.rad(math.random(-180, 180))
-            )
-
-            -- Aplica a CFrame unificada com predição e rotação extrema
-            PCar:SetPrimaryPartCFrame(CFrame.new(predictedPosition + currentOffset) * randomRotation)
+            if Spin and Spin.Parent then
+                Spin:Destroy()
+                print("Fling desativado")
+            end
         end)
+    end
+})
 end
 })
 
