@@ -1257,8 +1257,6 @@ Troll:AddButton({
         end)
     end
 })
-end
-})
 
 Troll:AddButton({
     Name = "Desligar Fling - Boat",
