@@ -556,7 +556,7 @@ TrollTab:AddToggle({
 TrollTab:AddSection({ "Anti Sit" })
 TrollTab:AddToggle({
     Name = "Anti Sit",
-    Description = "Não Deixa seu personagem Sentar",
+    Description = "Funciona, mas permanente",
     Default = false,
     Callback = function(Value)
         local player = game.Players.LocalPlayer
@@ -653,33 +653,6 @@ local Character = LocalPlayer.Character
 local Humanoid = Character and Character:WaitForChild("Humanoid")
 local RootPart = Character and Character:WaitForChild("HumanoidRootPart")
 
-local function cleanupCouch()
-    local char = LocalPlayer.Character
-    if char then
-        local couch = char:FindFirstChild("Chaos.Couch") or LocalPlayer.Backpack:FindFirstChild("Chaos.Couch")
-        if couch then
-            couch:Destroy()
-        end
-    end
-    ReplicatedStorage:WaitForChild("RE"):WaitForChild("1Clea1rTool1s"):FireServer("ClearAllTools")
-end
-
-LocalPlayer.CharacterAdded:Connect(function(newCharacter)
-    Character = newCharacter
-    Humanoid = newCharacter:WaitForChild("Humanoid")
-    RootPart = newCharacter:WaitForChild("HumanoidRootPart")
-    cleanupCouch()
-    
-    Humanoid.Died:Connect(function()
-        cleanupCouch()
-    end)
-end)
-
-if Humanoid then
-    Humanoid.Died:Connect(function()
-        cleanupCouch()
-    end)
-end
 
     local PlayerSection = Troll:AddSection({ Name = "Troll Player" })
 
