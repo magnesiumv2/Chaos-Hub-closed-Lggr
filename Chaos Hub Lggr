@@ -806,7 +806,7 @@ local args = {
 }
 game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Clea1rTool1s"):FireServer(unpack(args))
 
-task.wait(0.1)
+task.wait(0.001)
 
 
             local args = {
@@ -815,14 +815,14 @@ task.wait(0.1)
             }
             game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
 
-            task.wait(0.1)
+            task.wait(0.001)
             local tool = LocalPlayer.Backpack:FindFirstChild("Couch")
             if tool then
                 tool.Parent = char
             end
-				task.wait(0.1)
+				task.wait(0.001)
 				game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.F, false, game)
-task.wait(0.25)
+task.wait(0.001)
 
             workspace.FallenPartsDestroyHeight = 0/0
             local bv = Instance.new("BodyVelocity")
