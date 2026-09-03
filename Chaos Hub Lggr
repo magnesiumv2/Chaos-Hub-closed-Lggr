@@ -21,7 +21,6 @@ InfoTab:AddParagraph({ "Owner / Developer:", "Magnesiumv2" })
 InfoTab:AddParagraph({ "Colaborações:", "ninguém" })
 InfoTab:AddParagraph({ "Você está usando:", "Chaos Hub (Versão Lggr)" })
 InfoTab:AddParagraph({"Novidades:", "Hub de Destruição"})
-end})
 
 InfoTab:AddSection({ "Rejoin" })
 InfoTab:AddButton({
