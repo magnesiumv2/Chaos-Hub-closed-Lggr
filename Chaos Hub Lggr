@@ -683,7 +683,6 @@ if Humanoid then
     end)
 end
 
-local function KillPlayerCouch()
     local PlayerSection = Troll:AddSection({ Name = "Troll Player" })
 
 local function getPlayerList()
