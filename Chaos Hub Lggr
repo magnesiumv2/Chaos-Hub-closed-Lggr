@@ -786,16 +786,16 @@ local viewing = false
 local flingActive = false
 local targetConnection = nil -- Armazena a conexão do evento do alvo
 
--- Função principal que executa o Fling
+-- Função principal que executa o Fling Agressivo (Foco na Cabeça)
 local function runFling(target)
     if not flingActive or not target or not target.Character then return end
     
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local tRoot = target.Character:WaitForChild("HumanoidRootPart", 5)
+    local tHead = target.Character:WaitForChild("Head", 5) -- Alvo agora é a Cabeça
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     
-    if not root or not tRoot or not hum then return end
+    if not root or not tHead or not hum then return end
     
     local original = root.CFrame
     
@@ -817,59 +817,66 @@ local function runFling(target)
     
     workspace.FallenPartsDestroyHeight = 0/0
     
-    -- Força física do Fling
+    -- Força física do Fling Maximizada
     local bv = Instance.new("BodyVelocity")
     bv.Name = "FlingForce"
-    bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
+    bv.Velocity = Vector3.new(9e9, 9e9, 9e9) -- Velocidade aumentada para 9e9
     bv.MaxForce = Vector3.new(1/0, 1/0, 1/0)
     bv.Parent = root
     
     hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-    hum.PlatformStand = false
-    cam.CameraSubject = target.Character:FindFirstChild("Head") or tRoot or hum
+    hum.PlatformStand = true -- Ativado para evitar colisões internas do próprio boneco bugar o fling
+    cam.CameraSubject = tHead
     
     task.spawn(function()
         local angle = 0
-        local parts = {root}
         
-        -- Loop enquanto o fling estiver ativo e o alvo estiver vivo/não sentado
+        -- Loop ultra rápido enquanto o fling estiver ativo e o alvo estiver vivo/não sentado
         while flingActive and target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") do
             local tHum = target.Character:FindFirstChildOfClass("Humanoid")
-            if tHum.Sit then break end
+            local targetHead = target.Character:FindFirstChild("Head")
             
-            angle += 50
-            for _, part in ipairs(parts) do
-                if target.Character:FindFirstChild("HumanoidRootPart") then
-                    local pos_x = target.Character.HumanoidRootPart.Position.X
-                    local pos_y = target.Character.HumanoidRootPart.Position.Y
-                    local pos_z = target.Character.HumanoidRootPart.Position.Z
-                    
-                    pos_x = pos_x + (target.Character.HumanoidRootPart.Velocity.X / 1.5)
-                    pos_y = pos_y + (target.Character.HumanoidRootPart.Velocity.Y / 1.5)
-                    pos_z = pos_z + (target.Character.HumanoidRootPart.Velocity.Z / 1.5)
-                    
-                    root.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), 0, 0)
+            if tHum.Sit or not targetHead then break end
+            
+            angle += 120 -- Rotação muito mais rápida por frame (Agressivo)
+            
+            -- Previsão de movimento ultra colada na cabeça do alvo
+            local pos_x = targetHead.Position.X + (targetHead.Velocity.X * 0.12)
+            local pos_y = targetHead.Position.Y + (targetHead.Velocity.Y * 0.12)
+            local pos_z = targetHead.Position.Z + (targetHead.Velocity.Z * 0.12)
+            
+            -- Teleporte multi-eixo ultra caótico na cabeça do alvo
+            root.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), math.rad(angle * 0.5), math.sin(angle))
+            
+            -- Força de rotação massiva e randômica para quebrar a física do alvo instantaneamente
+            root.Velocity = Vector3.new(9e10, 9e10, 9e10)
+            root.RotVelocity = Vector3.new(math.random(-9e10, 9e10), math.random(-9e10, 9e10), math.random(-9e10, 9e10))
+            
+            task.wait() -- Roda na velocidade máxima do motor do jogo
+        end
+        
+        -- Resetar o jogador após o loop acabar
+        if bv then bv:Destroy() end
+        if hum and hum.Parent then
+            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+            hum.PlatformStand = false
+            cam.CameraSubject = hum
+            hum:UnequipTools()
+        end
+        
+        if root and root.Parent then
+            root.CFrame = original
+        end
+        
+        if char then
+            for _, p in pairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    p.Velocity = Vector3.zero
+                    p.RotVelocity = Vector3.zero
                 end
             end
-            root.Velocity = Vector3.new(9e9, 9e9, 9e9)
-            root.RotVelocity = Vector3.new(9e9, 9e9, 9e9)
-            task.wait()
         end
         
-        -- Resetar o jogador após o loop acabar (morte do alvo ou toggle desativado)
-        bv:Destroy()
-        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-        hum.PlatformStand = false
-        root.CFrame = original
-        cam.CameraSubject = hum
-        
-        for _, p in pairs(char:GetDescendants()) do
-            if p:IsA("BasePart") then
-                p.Velocity = Vector3.zero
-                p.RotVelocity = Vector3.zero
-            end
-        end
-        hum:UnequipTools()
         game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args2))
     end)
 end
@@ -880,7 +887,6 @@ Troll:AddToggle({
     Callback = function(state)
         flingActive = state
         
-        -- Desconecta rastreamentos anteriores para não bugar
         if targetConnection then
             targetConnection:Disconnect()
             targetConnection = nil
@@ -890,24 +896,23 @@ Troll:AddToggle({
             local target = Players:FindFirstChild(selectedPlayerName)
             if not target then return end
             
-            -- Se o alvo já estiver vivo ao ativar, executa imediatamente
-            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            if target.Character and target.Character:FindFirstChild("Head") then
                 task.spawn(runFling, target)
             end
             
-            -- Conecta o evento para executar toda vez que o alvo renascer (CharacterAdded)
             targetConnection = target.CharacterAdded:Connect(function(newCharacter)
-                task.wait(0.5) -- Pequeno delay para garantir que o personagem carregou totalmente
+                task.wait(0.3) -- Delay reduzido para flingar o alvo assim que ele piscar no mapa
                 if flingActive then
                     runFling(target)
                 end
             end)
         else
-            -- Força a parada do loop se o toggle for desativado
             flingActive = false
         end
     end
 })
+
+
 
 local function FlingBall(target)
 
