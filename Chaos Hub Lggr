@@ -876,8 +876,8 @@ task.wait(0.001)
 })
 
 local function FlingBall(target)
-
     local players = game:GetService("Players")
+    local runService = game:GetService("RunService")
     local player = players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
@@ -897,9 +897,12 @@ local function FlingBall(target)
     end
 
     local Ball = ServerBalls:FindFirstChild("Soccer" .. player.Name) or GetBall()
+    
+    -- Configurações físicas extremas para o Fling
     Ball.CanCollide = false
     Ball.Massless = true
-    Ball.CustomPhysicalProperties = PhysicalProperties.new(0.0001, 0, 0)
+    -- Atrito zero e elasticidade máxima para não perder força no impacto
+    Ball.CustomPhysicalProperties = PhysicalProperties.new(0.0001, 0, 1, 0, 0)
 
     if target ~= player then
         local tchar = target.Character
@@ -907,49 +910,64 @@ local function FlingBall(target)
             local troot = tchar.HumanoidRootPart
             local thum = tchar.Humanoid
 
-            if Ball:FindFirstChildWhichIsA("BodyVelocity") then
-                Ball:FindFirstChildWhichIsA("BodyVelocity"):Destroy()
+            -- Limpa instâncias de força antigas
+            for _, v in pairs(Ball:GetChildren()) do
+                if v:IsA("BodyVelocity") or v:IsA("BodyAngularVelocity") then
+                    v:Destroy()
+                end
             end
 
+            -- Força Linear Extrema (Empurrão)
             local bv = Instance.new("BodyVelocity")
-            bv.Name = "FlingPower"
-            bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
+            bv.Name = "FlingVelocity"
+            bv.Velocity = Vector3.new(9e9, 9e9, 9e9)
             bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bv.P = 9e900
+            bv.P = 9e9
             bv.Parent = Ball
 
-            workspace.CurrentCamera.CameraSubject = thum
-            local StartTime = os.time()
-            repeat
-                if troot.Velocity.Magnitude > 0 then
-                -- Cálculo da posição ajustada com base na velocidade do alvo
-                local pos_x = troot.Position.X + (troot.Velocity.X / 1.5)
-                local pos_y = troot.Position.Y + (troot.Velocity.Y / 1.5)
-                local pos_z = troot.Position.Z + (troot.Velocity.Z / 1.5)
+            -- Força Angular Extrema (Giro violento que quebra a física do alvo)
+            local bav = Instance.new("BodyAngularVelocity")
+            bav.Name = "FlingRot"
+            bav.AngularVelocity = Vector3.new(9e9, 9e9, 9e9)
+            bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bav.P = 9e9
+            bav.Parent = Ball
 
-                -- Posiciona a bola diretamente na posição ajustada
-                local position = Vector3.new(pos_x, pos_y, pos_z)
-                Ball.CFrame = CFrame.new(position)
-                Ball.Orientation += Vector3.new(45, 60, 30)
-else
-for i, v in pairs(tchar:GetChildren()) do
-if v:IsA("BasePart") and v.CanCollide and not v.Anchored then
-Ball.CFrame = v.CFrame
-task.wait(1/6000)
-end
-end
-end
-                task.wait(1/6000)
-            until troot.Velocity.Magnitude > 1000 or thum.Health <= 0 or not tchar:IsDescendantOf(workspace) or target.Parent ~= players
-            workspace.CurrentCamera.CameraSubject = humanoid
+            workspace.CurrentCamera.CameraSubject = thum
+            
+            -- Conexão Heartbeat: Roda antes de cada frame de física (Muito mais rápido que task.wait)
+            local flingConnection
+            flingConnection = runService.Heartbeat:Connect(function()
+                -- Verifica se o alvo ainda é válido
+                if not target.Parent or not tchar.Parent or thum.Health <= 0 or troot.Velocity.Magnitude > 2000 then
+                    flingConnection:Disconnect()
+                    workspace.CurrentCamera.CameraSubject = humanoid
+                    if bv then bv:Destroy() end
+                    if bav then bav:Destroy() end
+                    return
+                end
+
+                -- Multiplicador preditivo agressivo baseado na velocidade atual do alvo
+                local prediction = troot.Velocity * 0.15
+                local targetPos = troot.Position + prediction
+
+                -- Teleporta e força a velocidade da bola diretamente no alvo em cada milissegundo
+                Ball.CFrame = CFrame.new(targetPos)
+                Ball.Velocity = Vector3.new(9e7, 9e7, 9e7) 
+            end)
+
+            -- Trava o script até que o fling termine
+            repeat task.wait() until not flingConnection.Connected
         end
     end
 end
 
 Troll:AddButton({
-Name = "Fling Ball",
+    Name = "Fling Ball",
     Callback = function()
-        FlingBall(game:GetService("Players")[selectedPlayerName])
+        if selectedPlayerName and game:GetService("Players"):FindFirstChild(selectedPlayerName) then
+            FlingBall(game:GetService("Players")[selectedPlayerName])
+        end
     end
 })
 
