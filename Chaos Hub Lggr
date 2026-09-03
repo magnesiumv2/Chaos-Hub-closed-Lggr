@@ -778,99 +778,134 @@ local function getPlayerList()
         end
     })
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local cam = workspace.CurrentCamera
-local currentPlayers, selectedPlayer = {}, nil
-local viewing = false
-local flingActive = false
+-- Versão: Auto Fling que reativa quando o alvo respawnar
+-- Insira isso no mesmo escopo onde Players, LocalPlayer, cam existem
 
+local function ensureToolAndEquip(toolName)
+    if not isItemInInventory(toolName) then
+        local args = { [1] = "PickingTools", [2] = toolName }
+        pcall(function()
+            game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
+        end)
+    end
+    task.wait(0.05)
+    if LocalPlayer.Backpack:FindFirstChild(toolName) then
+        LocalPlayer.Backpack[toolName].Parent = LocalPlayer.Character
+    end
+    task.wait(0.05)
+    pcall(function() VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game) end)
+end
+
+local function doFlingOnce(target)
+    if not target or not target.Parent then return end
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        char = LocalPlayer.CharacterAdded:Wait()
+    end
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- prepare tool
+    ensureToolAndEquip("Couch")
+
+    -- create fling BV on our root
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    workspace.FallenPartsDestroyHeight = 0/0
+    local bv = Instance.new("BodyVelocity")
+    bv.Name = "FlingForce"
+    bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
+    bv.MaxForce = Vector3.new(1/0, 1/0, 1/0)
+    bv.Parent = root
+
+    hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+    hum.PlatformStand = false
+
+    -- find target character and humanoidrootpart
+    local tchar = target.Character or target.CharacterAdded:Wait()
+    local troot = tchar and tchar:FindFirstChild("HumanoidRootPart")
+    if not troot then
+        troot = tchar:WaitForChild("HumanoidRootPart", 5)
+    end
+    if not troot then
+        -- cleanup
+        if bv and bv.Parent then bv:Destroy() end
+        return
+    end
+
+    local original = root.CFrame
+    cam.CameraSubject = (tchar:FindFirstChild("Head") or troot or hum)
+
+    -- fling loop: similar à sua implementação, roda até alvo morrer/sair ou autoFling ser desativado
+    local angle = 0
+    local parts = { root }
+    while getgenv().autoFlingEnabled and target and target.Parent and target.Character and target.Character:FindFirstChildOfClass("Humanoid") do
+        local tHum = target.Character:FindFirstChildOfClass("Humanoid")
+        if not tHum or tHum.Sit then break end
+
+        angle = angle + 50
+
+        for _, part in ipairs(parts) do
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local tHRP = target.Character.HumanoidRootPart
+                local pos_x = tHRP.Position.X + (tHRP.Velocity.X / 1.5)
+                local pos_y = tHRP.Position.Y + (tHRP.Velocity.Y / 1.5)
+                local pos_z = tHRP.Position.Z + (tHRP.Velocity.Z / 1.5)
+                root.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), 0, 0)
+            end
+        end
+
+        root.Velocity = Vector3.new(9e9, 9e9, 9e9)
+        root.RotVelocity = Vector3.new(9e9, 9e9, 9e9)
+        task.wait()
+    end
+
+    -- cleanup after this fling attempt
+    pcall(function() if bv and bv.Parent then bv:Destroy() end end)
+    pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true) end)
+    pcall(function() hum.PlatformStand = false end)
+    pcall(function() root.CFrame = original end)
+    pcall(function() cam.CameraSubject = hum end)
+
+    -- unequip tools and reset state (non-fatal if fails)
+    pcall(function() for _, p in pairs(char:GetDescendants()) do if p:IsA("BasePart") then p.Velocity = Vector3.zero p.RotVelocity = Vector3.zero end end end)
+    pcall(function() hum:UnequipTools() end)
+end
+
+-- controlador que espera respawns e re-executa
 Troll:AddToggle({
-    Name = "Auto Fling ",
+    Name = "Auto Fling",
     Default = false,
     Callback = function(state)
-
-        flingActive = state
-        if state and selectedPlayerName then
-            local target = Players:FindFirstChild(selectedPlayerName)
-            if not target or not target.Character then return end
-            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-            if not root or not tRoot then return end
-            local char = LocalPlayer.Character
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local original = root.CFrame
-
-local args = {
-	"ClearAllTools"
-}
-game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Clea1rTool1s"):FireServer(unpack(args))
-
-task.wait(0.001)
-
-
-            local args = {
-                [1] = "PickingTools",
-                [2] = "Couch"
-            }
-            game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
-
-            task.wait(0.001)
-            local tool = LocalPlayer.Backpack:FindFirstChild("Couch")
-            if tool then
-                tool.Parent = char
-            end
-				task.wait(0.001)
-				game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.F, false, game)
-task.wait(0.001)
-
-            workspace.FallenPartsDestroyHeight = 0/0
-            local bv = Instance.new("BodyVelocity")
-            bv.Name = "FlingForce"
-            bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
-            bv.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-            bv.Parent = root
-            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-            hum.PlatformStand = false
-            cam.CameraSubject = target.Character:FindFirstChild("Head") or tRoot or hum
-
-            task.spawn(function()
-                local angle = 0
-                local parts = {root}
-                while flingActive and target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") do
-                    local tHum = target.Character:FindFirstChildOfClass("Humanoid")
-                    if tHum.Sit then break end
-                    angle += 50
-
-                    for _, part in ipairs(parts) do
-                        local pos_x = target.Character.HumanoidRootPart.Position.X
-                        local pos_y = target.Character.HumanoidRootPart.Position.Y
-                        local pos_z = target.Character.HumanoidRootPart.Position.Z
-                        pos_x = pos_x + (target.Character.HumanoidRootPart.Velocity.X / 1.5)
-                        pos_y = pos_y + (target.Character.HumanoidRootPart.Velocity.Y / 1.5)
-                        pos_z = pos_z + (target.Character.HumanoidRootPart.Velocity.Z / 1.5)
-                        root.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), 0, 0)
-                    end
-
-                    root.Velocity = Vector3.new(9e9, 9e9, 9e9)
-                    root.RotVelocity = Vector3.new(9e9, 9e9, 9e9)
-                    task.wait()
-                end
-                flingActive = false
-                bv:Destroy()
-                hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-                hum.PlatformStand = false
-                root.CFrame = original
-                cam.CameraSubject = hum
-                for _, p in pairs(char:GetDescendants()) do
-                    if p:IsA("BasePart") then
-                        p.Velocity = Vector3.zero
-                        p.RotVelocity = Vector3.zero
+        getgenv().autoFlingEnabled = state
+        if state then
+            -- roda em background para monitorar respawns
+            spawn(function()
+                while getgenv().autoFlingEnabled do
+                    local target = selectedPlayerName and Players:FindFirstChild(selectedPlayerName) or nil
+                    if target then
+                        -- aguarda personagem do alvo existir (ou respawn)
+                        local ok, tchar = pcall(function() return target.Character end)
+                        if not ok or not tchar then
+                            tchar = target.CharacterAdded:Wait()
+                        end
+                        -- se ainda estiver ativado, executa uma tentativa de fling
+                        if getgenv().autoFlingEnabled then
+                            doFlingOnce(target)
+                        end
+                        task.wait(0.3) -- evita loops apertados entre respawns
+                    else
+                        -- se player não estiver no servidor, espera um pouco e procura de novo
+                        task.wait(1)
                     end
                 end
-                hum:UnequipTools()
-                game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
+                -- ao desativar, garante parada do fling loop global
+                getgenv().flingloop = false
             end)
+        else
+            -- desativando
+            getgenv().autoFlingEnabled = false
+            getgenv().flingloop = false
         end
     end
 })
