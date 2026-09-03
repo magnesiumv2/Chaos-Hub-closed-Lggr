@@ -778,134 +778,101 @@ local function getPlayerList()
         end
     })
 
-Troll:AddToggle({
-   Name = "Auto Fling"
-   Callback = function()
--- AUTO FLING AGRESSIVO - VERSÃO COUCH TELEPORT
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local cam = workspace.CurrentCamera
+local currentPlayers, selectedPlayer = {}, nil
+local viewing = false
 local flingActive = false
-local selectedPlayerName = nil
-local teleportHeight = 999999999999
 
-local function StartAggressiveFling(targetPlayerName)
-    if not targetPlayerName or not Players:FindFirstChild(targetPlayerName) then
-        warn("❌ Player não encontrado!")
-        return
-    end
-    
-    local target = Players:FindFirstChild(targetPlayerName)
-    local localChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local localRoot = localChar:WaitForChild("HumanoidRootPart")
-    local localHum = localChar:FindFirstChildOfClass("Humanoid")
-    
-    if not target or not target.Character then return end
-    
-    local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-    local tHum = target.Character:FindFirstChild("Humanoid")
-    
-    if not tRoot or not tHum then return end
-    
-    flingActive = true
-    local originalPos = localRoot.CFrame
-    
-    -- Limpar ferramentas anteriores
-    local args = { "ClearAllTools" }
-    ReplicatedStorage:WaitForChild("RE"):WaitForChild("1Clea1rTool1s"):FireServer(unpack(args))
-    task.wait(0.1)
-    
-    -- Pegar o sofá (Couch)
-    local args = {
-        [1] = "PickingTools",
-        [2] = "Couch"
-    }
-    ReplicatedStorage.RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
-    task.wait(0.2)
-    
-    local tool = LocalPlayer.Backpack:FindFirstChild("Couch")
-    if tool then
-        tool.Parent = localChar
-    end
-    
-    task.wait(0.15)
-    
-    -- Preparar o ataque
-    workspace.FallenPartsDestroyHeight = 0/0
-    
-    local bv = Instance.new("BodyVelocity")
-    bv.Name = "FlingForce"
-    bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
-    bv.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-    bv.Parent = localRoot
-    
-    localHum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-    localHum.PlatformStand = false
-    
-    -- Loop de ataque agressivo
-    task.spawn(function()
-        while flingActive and target and target.Character do
-            local tHum = target.Character:FindFirstChildOfClass("Humanoid")
-            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            
-            if not tHum or not tRoot then break end
-            
-            -- DETECÇÃO: Se o alvo está sentado, teleportar para cima!
-            if tHum.Sit then
-                print("🎯 ALVO SENTADO! TELEPORTANDO PARA CIMA!")
-                
-                -- Teleportar para cima de forma agressiva
-                local teleportPos = tRoot.Position + Vector3.new(0, teleportHeight, 0)
-                localRoot.CFrame = CFrame.new(teleportPos)
-                localRoot.Velocity = Vector3.new(0, 9e8, 0)
-                
-                -- Extra: Aplicar força gigantesca
-                localRoot.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-                bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
-                
-                task.wait(0.05)
-                break -- Sair do loop após teleporte bem-sucedido
-            else
-                -- Movimento normal de fling
-                local angle = tick() * 100
-                
-                local pos_x = tRoot.Position.X + (tRoot.Velocity.X / 1.2)
-                local pos_y = tRoot.Position.Y + (tRoot.Velocity.Y / 1.2)
-                local pos_z = tRoot.Position.Z + (tRoot.Velocity.Z / 1.2)
-                
-                localRoot.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), 0, 0)
-                localRoot.Velocity = Vector3.new(9e8, 9e8, 9e8)
-                localRoot.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-            end
-            
-            task.wait()
-        end
-        
-        -- Limpeza
-        flingActive = false
-        if bv then bv:Destroy() end
-        localHum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-        localHum.PlatformStand = false
-        localRoot.CFrame = originalPos
-        
-        for _, p in pairs(localChar:GetDescendants()) do
-            if p:IsA("BasePart") then
-                p.Velocity = Vector3.zero
-                p.RotVelocity = Vector3.zero
-            end
-        end
-        
-        localHum:UnequipTools()
-    end)
-    
-    print("✅ Auto Fling Agressivo Iniciado!")
-end
+Troll:AddToggle({
+    Name = "Auto Fling ",
+    Default = false,
+    Callback = function(state)
 
--- Para ativar no seu script de UI:
--- StartAggressiveFling(selectedPlayerName)
-end
+        flingActive = state
+        if state and selectedPlayerName then
+            local target = Players:FindFirstChild(selectedPlayerName)
+            if not target or not target.Character then return end
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+            if not root or not tRoot then return end
+            local char = LocalPlayer.Character
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local original = root.CFrame
+
+local args = {
+	"ClearAllTools"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Clea1rTool1s"):FireServer(unpack(args))
+
+task.wait(0.1)
+
+
+            local args = {
+                [1] = "PickingTools",
+                [2] = "Couch"
+            }
+            game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
+
+            task.wait(0.1)
+            local tool = LocalPlayer.Backpack:FindFirstChild("Couch")
+            if tool then
+                tool.Parent = char
+            end
+				task.wait(0.1)
+				game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.F, false, game)
+task.wait(0.25)
+
+            workspace.FallenPartsDestroyHeight = 0/0
+            local bv = Instance.new("BodyVelocity")
+            bv.Name = "FlingForce"
+            bv.Velocity = Vector3.new(9e8, 9e8, 9e8)
+            bv.MaxForce = Vector3.new(1/0, 1/0, 1/0)
+            bv.Parent = root
+            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+            hum.PlatformStand = false
+            cam.CameraSubject = target.Character:FindFirstChild("Head") or tRoot or hum
+
+            task.spawn(function()
+                local angle = 0
+                local parts = {root}
+                while flingActive and target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") do
+                    local tHum = target.Character:FindFirstChildOfClass("Humanoid")
+                    if tHum.Sit then break end
+                    angle += 50
+
+                    for _, part in ipairs(parts) do
+                        local pos_x = target.Character.HumanoidRootPart.Position.X
+                        local pos_y = target.Character.HumanoidRootPart.Position.Y
+                        local pos_z = target.Character.HumanoidRootPart.Position.Z
+                        pos_x = pos_x + (target.Character.HumanoidRootPart.Velocity.X / 1.5)
+                        pos_y = pos_y + (target.Character.HumanoidRootPart.Velocity.Y / 1.5)
+                        pos_z = pos_z + (target.Character.HumanoidRootPart.Velocity.Z / 1.5)
+                        root.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), 0, 0)
+                    end
+
+                    root.Velocity = Vector3.new(9e8, 9e8, 9e8)
+                    root.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+                    task.wait()
+                end
+                flingActive = false
+                bv:Destroy()
+                hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+                hum.PlatformStand = false
+                root.CFrame = original
+                cam.CameraSubject = hum
+                for _, p in pairs(char:GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        p.Velocity = Vector3.zero
+                        p.RotVelocity = Vector3.zero
+                    end
+                end
+                hum:UnequipTools()
+                game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
+            end)
+        end
+    end
 })
 
 local function FlingBall(target)
