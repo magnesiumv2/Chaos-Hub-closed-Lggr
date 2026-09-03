@@ -786,12 +786,12 @@ local viewing = false
 local flingActive = false
 local targetConnection = nil -- Armazena a conexão do evento do alvo
 
--- Função principal que executa o Fling Agressivo (Foco na Cabeça)
+-- Função principal que executa o Fling Ultra Agressivo
 local function runFling(target)
     if not flingActive or not target or not target.Character then return end
     
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local tHead = target.Character:WaitForChild("Head", 5) -- Alvo agora é a Cabeça
+    local tHead = target.Character:WaitForChild("Head", 5) -- Alvo mudado para a Cabeça
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     
@@ -799,84 +799,73 @@ local function runFling(target)
     
     local original = root.CFrame
     
-    -- Limpa e pega a ferramenta necessária
+    -- Limpa e pega a ferramenta necessária (Instante)
     local args = { "ClearAllTools" }
     game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Clea1rTool1s"):FireServer(unpack(args))
-    task.wait(0.001)
     
     local args2 = { [1] = "PickingTools", [2] = "Couch" }
     game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args2))
-    task.wait(0.001)
     
     local tool = LocalPlayer.Backpack:FindFirstChild("Couch")
     if tool then tool.Parent = char end
-    task.wait(0.001)
     
     game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.F, false, game)
-    task.wait(0.001)
     
     workspace.FallenPartsDestroyHeight = 0/0
     
-    -- Força física do Fling Maximizada
+    -- Força física extrema e instável para Fling Máximo
     local bv = Instance.new("BodyVelocity")
     bv.Name = "FlingForce"
-    bv.Velocity = Vector3.new(9e9, 9e9, 9e9) -- Velocidade aumentada para 9e9
+    bv.Velocity = Vector3.new(9e37, 9e37, 9e37) -- Valores massivos para quebrar a física do alvo
     bv.MaxForce = Vector3.new(1/0, 1/0, 1/0)
     bv.Parent = root
     
+    -- Ignora colisões internas e travas de estado
     hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-    hum.PlatformStand = true -- Ativado para evitar colisões internas do próprio boneco bugar o fling
+    hum.PlatformStand = true -- Desativa física padrão do humanoide para livre rotação
     cam.CameraSubject = tHead
     
     task.spawn(function()
         local angle = 0
         
-        -- Loop ultra rápido enquanto o fling estiver ativo e o alvo estiver vivo/não sentado
+        -- Loop de colisão agressiva na cabeça do alvo
         while flingActive and target and target.Character and target.Character:FindFirstChildOfClass("Humanoid") do
             local tHum = target.Character:FindFirstChildOfClass("Humanoid")
             local targetHead = target.Character:FindFirstChild("Head")
             
             if tHum.Sit or not targetHead then break end
             
-            angle += 120 -- Rotação muito mais rápida por frame (Agressivo)
+            angle += 120 -- Rotação extremamente rápida
             
-            -- Previsão de movimento ultra colada na cabeça do alvo
-            local pos_x = targetHead.Position.X + (targetHead.Velocity.X * 0.12)
-            local pos_y = targetHead.Position.Y + (targetHead.Velocity.Y * 0.12)
-            local pos_z = targetHead.Position.Z + (targetHead.Velocity.Z * 0.12)
+            -- Previsão de movimento ultra agressiva em cima da cabeça
+            local pos = targetHead.Position
+            local vel = targetHead.Velocity
             
-            -- Teleporte multi-eixo ultra caótico na cabeça do alvo
-            root.CFrame = CFrame.new(pos_x, pos_y, pos_z) * CFrame.Angles(math.rad(angle), math.rad(angle * 0.5), math.sin(angle))
+            -- Teleporta exatamente para a posição da cabeça somada à sua velocidade preditiva
+            root.CFrame = CFrame.new(pos.X + (vel.X * 0.1), pos.Y + (vel.Y * 0.1), pos.Z + (vel.Z * 0.1)) 
+                          * CFrame.Angles(math.sin(angle), math.cos(angle), math.tan(angle)) -- Rotação caótica multieixo
             
-            -- Força de rotação massiva e randômica para quebrar a física do alvo instantaneamente
-            root.Velocity = Vector3.new(9e10, 9e10, 9e10)
-            root.RotVelocity = Vector3.new(math.random(-9e10, 9e10), math.random(-9e10, 9e10), math.random(-9e10, 9e10))
+            -- Multiplicação de forças vetoriais alternadas para bugar a física do alvo
+            root.Velocity = Vector3.new(9e37, 9e37, 9e37)
+            root.RotVelocity = Vector3.new(9e37, 9e37, 9e37)
             
-            task.wait() -- Roda na velocidade máxima do motor do jogo
+            task.wait() -- Roda na taxa máxima do motor do jogo
         end
         
-        -- Resetar o jogador após o loop acabar
-        if bv then bv:Destroy() end
-        if hum and hum.Parent then
-            hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-            hum.PlatformStand = false
-            cam.CameraSubject = hum
-            hum:UnequipTools()
-        end
+        -- Resetar o jogador após o término do ataque
+        bv:Destroy()
+        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+        hum.PlatformStand = false
+        root.CFrame = original
+        cam.CameraSubject = hum
         
-        if root and root.Parent then
-            root.CFrame = original
-        end
-        
-        if char then
-            for _, p in pairs(char:GetDescendants()) do
-                if p:IsA("BasePart") then
-                    p.Velocity = Vector3.zero
-                    p.RotVelocity = Vector3.zero
-                end
+        for _, p in pairs(char:GetDescendants()) do
+            if p:IsA("BasePart") then
+                p.Velocity = Vector3.zero
+                p.RotVelocity = Vector3.zero
             end
         end
-        
+        hum:UnequipTools()
         game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args2))
     end)
 end
@@ -896,12 +885,15 @@ Troll:AddToggle({
             local target = Players:FindFirstChild(selectedPlayerName)
             if not target then return end
             
+            -- Executa instantaneamente se encontrar a cabeça do alvo
             if target.Character and target.Character:FindFirstChild("Head") then
                 task.spawn(runFling, target)
             end
             
+            -- Conecta para o próximo spawn
             targetConnection = target.CharacterAdded:Connect(function(newCharacter)
-                task.wait(0.3) -- Delay reduzido para flingar o alvo assim que ele piscar no mapa
+                -- Delay reduzido para 0.1 para atacar antes mesmo do alvo conseguir se mover
+                task.wait(0.1) 
                 if flingActive then
                     runFling(target)
                 end
@@ -911,8 +903,6 @@ Troll:AddToggle({
         end
     end
 })
-
-
 
 local function FlingBall(target)
 
