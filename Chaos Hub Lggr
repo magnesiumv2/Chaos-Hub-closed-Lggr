@@ -944,8 +944,6 @@ Troll:AddToggle({
 ]]
 
 return AggressiveHeadFling
-end
-})
 
 
 local function FlingBall(target)
