@@ -1186,104 +1186,132 @@ Troll:AddButton({
    Name = "Fling Boat",
    Callback = function()
 if not selectedPlayerName or not game.Players:FindFirstChild(selectedPlayerName) then
-            warn("Nenhum jogador selecionado ou não existe")
-            return
-        end
+    warn("Nenhum jogador selecionado ou não existe")
+    return
+end
 
-        local Player = game.Players.LocalPlayer
-        local Character = Player.Character
-        local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-        local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-        local Vehicles = game.Workspace:FindFirstChild("Vehicles")
+local Player = game.Players.LocalPlayer
+local Character = Player.Character
+local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+local Vehicles = game.Workspace:FindFirstChild("Vehicles")
 
-        if not Humanoid or not RootPart then
-            warn("Humanoid ou RootPart inválido")
-            return
-        end
+if not Humanoid or not RootPart then
+    warn("Humanoid ou RootPart inválido")
+    return
+end
 
-        local function spawnBoat()
-            RootPart.CFrame = CFrame.new(1754, -2, 58)
-            task.wait(0.5)
-            game:GetService("ReplicatedStorage").RE:FindFirstChild("1Ca1r"):FireServer("PickingBoat", "MilitaryBoatFree")
-            task.wait(1)
-            return Vehicles:FindFirstChild(Player.Name.."Car")
-        end
-
-        local PCar = Vehicles:FindFirstChild(Player.Name.."Car") or spawnBoat()
-        if not PCar then
-            warn("Falha ao spawnar o barco")
-            return
-        end
-
-        local Seat = PCar:FindFirstChild("Body") and PCar.Body:FindFirstChild("VehicleSeat")
-        if not Seat then
-            warn("Assento não encontrado")
-            return
-        end
-
-        repeat 
-            task.wait(0.1)
-            RootPart.CFrame = Seat.CFrame * CFrame.new(0, 1, 0)
-        until Humanoid.SeatPart == Seat
-
-        print("Barco spawnado!")
-
-        local TargetPlayer = game.Players:FindFirstChild(selectedPlayerName)
-        if not TargetPlayer or not TargetPlayer.Character then
-            warn("Jogador não encontrado")
-            return
-        end
-
-        local TargetC = TargetPlayer.Character
-        local TargetH = TargetC:FindFirstChildOfClass("Humanoid")
-        local TargetRP = TargetC:FindFirstChild("HumanoidRootPart")
-
-        if not TargetRP or not TargetH then
-            warn("Humanoid ou RootPart do alvo não encontrado")
-            return
-        end
-
-        local Spin = Instance.new("BodyAngularVelocity")
-        Spin.Name = "Spinning"
-        Spin.Parent = PCar.PrimaryPart
-        Spin.MaxTorque = Vector3.new(0, math.huge, 0)
-        Spin.AngularVelocity = Vector3.new(0, 369, 0) 
-
-        print("Fling ativo!")
-
-        local function moveCar(TargetRP, offset)
-            if PCar and PCar.PrimaryPart then
-                PCar:SetPrimaryPartCFrame(CFrame.new(TargetRP.Position + offset))
-            end
-        end
-
-        task.spawn(function()
-            while PCar and PCar.Parent and TargetRP and TargetRP.Parent do
-                task.wait(0.01) 
-                
-                moveCar(TargetRP, Vector3.new(0, 1, 0))  
-                moveCar(TargetRP, Vector3.new(0, -2.25, 5))  
-                moveCar(TargetRP, Vector3.new(0, 2.25, 0.25))  
-                moveCar(TargetRP, Vector3.new(-2.25, -1.5, 2.25))  
-                moveCar(TargetRP, Vector3.new(0, 1.5, 0))  
-                moveCar(TargetRP, Vector3.new(0, -1.5, 0))  
-
-                if PCar and PCar.PrimaryPart then
-                    local Rotation = CFrame.Angles(
-                        math.rad(math.random(-369, 369)),  
-                        math.rad(math.random(-369, 369)), 
-                        math.rad(math.random(-369, 369))
-                    )
-                    PCar:SetPrimaryPartCFrame(CFrame.new(TargetRP.Position + Vector3.new(0, 1.5, 0)) * Rotation)
-                end
-            end
-
-            if Spin and Spin.Parent then
-                Spin:Destroy()
-                print("Fling desativado")
-            end
-        end)
+local function spawnBoat()
+    RootPart.CFrame = CFrame.new(1754, -2, 58)
+    task.wait(0.5)
+    
+    local remote = game:GetService("ReplicatedStorage").RE:FindFirstChild("1Ca1r")
+    if remote then
+        remote:FireServer("PickingBoat", "MilitaryBoatFree")
+    else
+        warn("RemoteEvent '1Ca1r' não encontrado")
+        return nil
     end
+    
+    task.wait(1)
+    return Vehicles:FindFirstChild(Player.Name.."Car")
+end
+
+local PCar = Vehicles:FindFirstChild(Player.Name.."Car") or spawnBoat()
+if not PCar then
+    warn("Falha ao spawnar o barco")
+    return
+end
+
+-- Garante que o modelo tem uma PrimaryPart definida para a física funcionar
+if not PCar.PrimaryPart then
+    PCar.PrimaryPart = PCar:FindFirstChildWithClass("Part") or PCar:FindFirstChildWithClass("MeshPart")
+end
+
+local Seat = PCar:FindFirstChild("Body") and PCar.Body:FindFirstChild("VehicleSeat")
+if not Seat then
+    Seat = PCar:FindFirstChildOfClass("VehicleSeat") or PCar:FindFirstChildWithClass("Seat")
+end
+
+if not Seat then
+    warn("Assento não encontrado")
+    return
+end
+
+-- Senta no veículo (Essencial para ganhar NetworkOwnership da física do barco)
+repeat 
+    task.wait(0.1)
+    RootPart.CFrame = Seat.CFrame * CFrame.new(0, 1, 0)
+until Humanoid.SeatPart == Seat
+
+print("Barco spawnado e jogador sentado!")
+
+local TargetPlayer = game.Players:FindFirstChild(selectedPlayerName)
+if not TargetPlayer or not TargetPlayer.Character then
+    warn("Jogador alvo não encontrado")
+    return
+end
+
+local TargetC = TargetPlayer.Character
+local TargetRP = TargetC:FindFirstChild("HumanoidRootPart")
+
+if not TargetRP then
+    warn("HumanoidRootPart do alvo não encontrado")
+    return
+end
+
+-- Cria o giro usando AngularVelocity (Substituto moderno do BodyAngularVelocity)
+local Attachment = Instance.new("Attachment")
+Attachment.Parent = PCar.PrimaryPart
+
+local Spin = Instance.new("AngularVelocity")
+Spin.Name = "Spinning"
+Spin.Attachment0 = Attachment
+Spin.MaxTorque = math.huge
+Spin.AngularVelocity = Vector3.new(0, 369, 0) 
+Spin.Parent = PCar.PrimaryPart
+
+print("Fling ativo!")
+
+-- Tabela com as posições de offset para criar o efeito descontrolado
+local offsets = {
+    Vector3.new(0, 1, 0),
+    Vector3.new(0, -2.25, 5),
+    Vector3.new(0, 2.25, 0.25),
+    Vector3.new(-2.25, -1.5, 2.25),
+    Vector3.new(0, 1.5, 0),
+    Vector3.new(0, -1.5, 0)
+}
+
+task.spawn(function()
+    local index = 1
+    
+    while PCar and PCar.Parent and TargetRP and TargetRP.Parent and Humanoid.SeatPart == Seat do
+        task.wait(0.02) -- Tempo ideal para o motor de física do Roblox registrar o impacto
+        
+        if PCar.PrimaryPart then
+            -- Alterna entre as posições da lista a cada frame
+            local currentOffset = offsets[index]
+            index = index % #offsets + 1
+            
+            -- Cria uma rotação caótica aleatória
+            local Rotation = CFrame.Angles(
+                math.rad(math.random(-369, 369)),  
+                math.rad(math.random(-369, 369)), 
+                math.rad(math.random(-369, 369))
+            )
+            
+            -- Usa PivotTo (API correta e atualizada)
+            PCar:PivotTo(CFrame.new(TargetRP.Position + currentOffset) * Rotation)
+        end
+    end
+
+    -- Limpeza ao encerrar
+    if Spin then Spin:Destroy() end
+    if Attachment then Attachment:Destroy() end
+    print("Fling desativado")
+end)
+end
 })
 
 Troll:AddButton({
