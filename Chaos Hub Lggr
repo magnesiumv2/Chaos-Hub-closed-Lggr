@@ -1290,7 +1290,6 @@ function alternar()
             end
         end)
     end
-})
         -- Coloque aqui a ação para quando ligar
     else
         local Player = game.Players.LocalPlayer
@@ -1348,7 +1347,6 @@ function alternar()
 
         print("Jogador liberado, seguro na posição.")
     end
-})
         -- Coloque aqui a ação para quando desligar
     end
 end
