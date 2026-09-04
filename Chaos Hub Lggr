@@ -25,26 +25,31 @@ InfoTab:AddButton({
    Name = "Anti Kick",
    Description = "Impede você de ser Expulso do Servidor",
    Callback = function()
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-	local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
-    	local method = getnamecallmethod and getnamecallmethod() or ""
-    	if select(1, ...) == LocalPlayer and method == "Kick" or method == "kick" then
-        	return nil
-    	end
-    	return oldNamecall(...)
-	end))
-	hookfunction(LocalPlayer.Kick, newcclosure(function(self, _)
-    	if self ~= lp then
-        	error("Expected ':' not '.' calling member function Kick", 2)
-    	end
-    	return nil
-	end))
 
-	notify('Client Antikick','Client anti kick is now active (only effective on localscript kick)')
-end
+-- Intercepta chamadas de metamethod (__namecall)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if self == LocalPlayer and (method == "Kick" or method == "kick") then
+        return nil
+    end
+    return oldNamecall(self, ...)
+end))
+
+-- Intercepta chamadas diretas via ponto (.) ou dois-pontos (:)
+local oldKick
+oldKick = hookfunction(LocalPlayer.Kick, newcclosure(function(self, ...)
+    if self == LocalPlayer then
+        return nil
+    end
+    return oldKick(self, ...)
+end))
+
+notify('Client Antikick', 'Client anti kick is now active (only effective on localscript kick)')
 end
 })
-
 InfoTab:AddSection({ "Rejoin" })
 InfoTab:AddButton({
     Name = "Rejoin",
