@@ -2,8 +2,8 @@ local Libary = loadstring(game:HttpGet("https://pastefy.app/TYVuPNOS/raw"))()
 workspace.FallenPartsDestroyHeight = -math.huge
 
 local Window = Libary:MakeWindow({
-    Title = "Chaos Hub",
-    SubTitle = "Chaos Hub | Brookhaven 🏡RP",
+    Title = "Chaos Hub (Lggr)",
+    SubTitle = "Chaos Hub (Lggr)| Brookhaven 🏡RP",
     LoadText = "CHAOS ARQUIVO",
     Flags = "chaoshub_Broookhaven"
 })
@@ -21,6 +21,29 @@ InfoTab:AddParagraph({ "Owner / Developer:", "Magnesiumv2" })
 InfoTab:AddParagraph({ "Colaborações:", "ninguém" })
 InfoTab:AddParagraph({ "Você está usando:", "Chaos Hub (Versão Lggr)" })
 InfoTab:AddParagraph({"Novidades:", "Hub de Destruição"})
+InfoTab:AddButton({
+   Name = "Anti Kick",
+   Description = "Impede você de ser Expulso do Servidor",
+   Callback = function()
+local LocalPlayer = Players.LocalPlayer
+	local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(...)
+    	local method = getnamecallmethod and getnamecallmethod() or ""
+    	if select(1, ...) == LocalPlayer and method == "Kick" or method == "kick" then
+        	return nil
+    	end
+    	return oldNamecall(...)
+	end))
+	hookfunction(LocalPlayer.Kick, newcclosure(function(self, _)
+    	if self ~= lp then
+        	error("Expected ':' not '.' calling member function Kick", 2)
+    	end
+    	return nil
+	end))
+
+	notify('Client Antikick','Client anti kick is now active (only effective on localscript kick)')
+end
+end
+})
 
 InfoTab:AddSection({ "Rejoin" })
 InfoTab:AddButton({
