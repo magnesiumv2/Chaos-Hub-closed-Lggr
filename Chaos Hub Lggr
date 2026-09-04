@@ -1155,7 +1155,7 @@ end
 local kill = Troll:AddSection({Name = "Fling Boat"})
 
 Troll:AddToggle({
-    Name = "Fling Boat"
+    Name = "Fling Boat",
    Callback = function()
 local ligado = false
 local loopThread = nil -- Armazena a thread do loop para podermos pará-la de forma limpa
