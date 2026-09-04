@@ -1182,16 +1182,10 @@ end
 
 local kill = Troll:AddSection({Name = "Fling Boat"})
 
-Troll:AddToggle({
+Troll:AddButton({
    Name = "Fling Boat",
    Callback = function()
-local ligado = false
-
-function alternar()
-    ligado = not ligado -- Inverte o valor atual
-    
-    if ligado then
-        if not selectedPlayerName or not game.Players:FindFirstChild(selectedPlayerName) then
+if not selectedPlayerName or not game.Players:FindFirstChild(selectedPlayerName) then
             warn("Nenhum jogador selecionado ou não existe")
             return
         end
@@ -1290,9 +1284,12 @@ function alternar()
             end
         end)
     end
-        -- Coloque aqui a ação para quando ligar
-    else
-        local Player = game.Players.LocalPlayer
+})
+
+Troll:AddButton({
+   Name = "Desligar Fling Boat",
+   Callback = function()
+local Player = game.Players.LocalPlayer
         local Character = Player.Character
         local RootPart = Character and Character:FindFirstChild("HumanoidRootPart")
         local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
@@ -1347,14 +1344,6 @@ function alternar()
 
         print("Jogador liberado, seguro na posição.")
     end
-        -- Coloque aqui a ação para quando desligar
-    end
-end
-
--- Simulando chamadas repetidas
-alternar() -- Saída: LIGADO
-alternar() -- Saída: DESLIGADO
-end
 })
 
 local kill = Troll:AddSection({Name = "Click Kill Methods"})
