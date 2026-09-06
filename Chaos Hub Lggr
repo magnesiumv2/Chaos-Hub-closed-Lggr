@@ -677,23 +677,6 @@ game:GetService("Players").LocalPlayer.Character:FindFirstChildWhichIsA("Humanoi
 end
 })
 
-TrollTab:AddButton({
-   Name = "Chaos Lggr Music",
-   Callback = function()
-local Som = Instance.new("Sound")
-Som.Name = "Brutal Chaotic Lagger"
-Som.Parent = game:GetService("Players*).LocalPlayer.Character.HumanoidRootPart
-Som.Volume = 10
-Som.IdSound = "rbxassetid://103681040321462"
-Som Play()
-
-wait(10)
-
-Som:Destroy()
-end
-end
-})
-
 local Troll = Window:MakeTab({ Title = "Troll Players", Icon = "rbxassetid://131153193945220" })
 
 local Players = game:GetService("Players")
