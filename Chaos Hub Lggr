@@ -1475,7 +1475,7 @@ entrada.TouchTap:Connect(function(toques, processado)
 			end)
 		end
 	end
-end)
+end
 end
 })
 
