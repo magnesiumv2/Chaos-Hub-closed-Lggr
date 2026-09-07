@@ -1436,8 +1436,7 @@ entrada.TouchTap:Connect(function(toques, processado)
 			FlingBall(jogador)
 		end
 	end
-end)
-
+end
 end
 })
 
